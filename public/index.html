@@ -135,18 +135,22 @@
       justify-content:center;
       gap:10px;
       min-width: 140px;
+      touch-action: manipulation;
+      z-index: 2;
     }
     .btn:active{transform: scale(.98)}
     .btn-yes{
-      left: 16%;
+      left: 24%;
       top: 56%;
       transform: translate(-50%, -50%);
       background: linear-gradient(180deg, var(--yes2), var(--yes));
       color:white;
+      z-index: 3;
+      touch-action: none;
     }
     .btn-yes:hover{box-shadow: 0 18px 40px rgba(255,59,134,.35)}
     .btn-no{
-      left: 66%;
+      left: 76%;
       top: 56%;
       transform: translate(-50%, -50%);
       background: rgba(255,255,255,.92);
@@ -161,6 +165,7 @@
       font-size:13px;
       color:#5c5c5c;
       padding:0 12px;
+      pointer-events: none;
     }
 
     /* Result modal */
@@ -240,7 +245,7 @@
     @media (max-width:520px){
       .arena{height:190px;}
       .btn{min-width: 132px; font-size:17px;}
-      .btn-yes{left: 24%;}
+      .btn-yes{left: 28%;}
       .btn-no{left: 72%;}
     }
   </style>
@@ -312,7 +317,7 @@
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
     // Move "No" away from pointer when it gets close
-    let noPos = { x: 0.66, y: 0.56 }; // relative positions inside arena (0..1)
+    let noPos = { x: 0.76, y: 0.56 }; // relative positions inside arena (0..1)
     const dangerRadius = 160;         // px: more sensitive (reacts sooner)
     const step = 260;                 // px: jumps much farther
 
@@ -379,16 +384,34 @@
       fleeFrom(e.clientX, e.clientY);
     });
 
-    // Ensure Yes always responds instantly (avoid arena interference)
+    // Ensure Yes always responds instantly and doesn't start scroll/drag
     yesBtn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
       e.stopPropagation();
+      openResult();
     });
 
-    // Yes -> show modal + confetti
-    yesBtn.addEventListener("click", () => {
+    // Keyboard / accessibility fallback
+    yesBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openResult();
+    });
+
+    let canCloseOverlay = true;
+
+    function openResult(){
+      if (overlay.classList.contains("show")) return;
+      // Prevent the opening gesture from also triggering an immediate close
+      canCloseOverlay = false;
+
       overlay.classList.add("show");
       startConfetti(2400);
-    });
+
+      // Arm closing after the current gesture/event loop finishes
+      requestAnimationFrame(() => {
+        setTimeout(() => { canCloseOverlay = true; }, 60);
+      });
+    }
 
     function closeModal(){
       overlay.classList.remove("show");
@@ -397,6 +420,7 @@
 
     closeBtn.addEventListener("click", closeModal);
     overlay.addEventListener("click", (e) => {
+      if (!canCloseOverlay) return;
       if (e.target === overlay) closeModal();
     });
     window.addEventListener("keydown", (e) => {
