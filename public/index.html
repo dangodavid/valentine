@@ -207,11 +207,24 @@
       grid-template-columns: 1fr;
       gap:0;
       background: #111;
+      position: relative;
     }
     .media img{
       width:100%;
       height:auto;
       display:block;
+    }
+    .media .overlay-img{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit: cover;
+      opacity: 0.15; /* very faded */
+      pointer-events:none;
+      user-select:none;
+      mix-blend-mode: screen;
+      filter: saturate(0.9) brightness(1.05);
     }
     .modalActions{
       padding:16px 18px 18px;
@@ -288,6 +301,8 @@
       <div class="media">
         <!-- Fireworks/confetti GIF -->
         <img id="fireworksGif" alt="Celebration" src="https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif" />
+        <!-- Soft overlay (local file in /public) -->
+        <img class="overlay-img" src="da.jpeg" alt="" aria-hidden="true" />
       </div>
 
       <div class="modalActions">
@@ -405,7 +420,7 @@
       canCloseOverlay = false;
 
       overlay.classList.add("show");
-      startConfetti(2400);
+      startConfetti();
 
       // Arm closing after the current gesture/event loop finishes
       requestAnimationFrame(() => {
@@ -434,6 +449,17 @@
     let confettiOn = false;
     let particles = [];
     let rafId = null;
+    let burstInterval = null;
+
+    const CONFETTI_COLORS = [
+      "#ff3b86",
+      "#ff5ea3",
+      "#ffd1e2",
+      "#ffffff",
+      "#ffcc00",
+      "#00d4ff",
+      "#7cff6b"
+    ];
 
     function resizeCanvas(){
       canvas.width = window.innerWidth * devicePixelRatio;
@@ -445,20 +471,35 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
+    function makeParticle(w, h){
+      return {
+        x: Math.random() * w,
+        // Spawn above the viewport so it "rains" from the top
+        y: -60 - Math.random() * h * 0.25,
+        r: 2 + Math.random() * 4,
+        // Slightly faster + more varied fall speed for a denser shower
+        vy: 3 + Math.random() * 8,
+        vx: -2.2 + Math.random() * 4.4,
+        a: Math.random() * Math.PI * 2,
+        va: -0.25 + Math.random() * 0.5,
+        c: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0],
+      };
+    }
+
     function makeParticles(count){
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const colors = ["#ff3b86","#ff5ea3","#ffd1e2","#ffffff","#ffcc00","#00d4ff","#7cff6b"];
-      particles = Array.from({length: count}, () => ({
-        x: Math.random() * w,
-        y: -20 - Math.random() * h * 0.3,
-        r: 2 + Math.random() * 4,
-        vy: 2 + Math.random() * 6,
-        vx: -2 + Math.random() * 4,
-        a: Math.random() * Math.PI * 2,
-        va: -0.2 + Math.random() * 0.4,
-        c: colors[(Math.random() * colors.length) | 0],
-      }));
+      particles = Array.from({length: count}, () => makeParticle(w, h));
+    }
+
+    function addParticles(count){
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      for (let i = 0; i < count; i++) particles.push(makeParticle(w, h));
+
+      // Keep a hard cap to avoid runaway CPU/GPU usage
+      const MAX = 900;
+      if (particles.length > MAX) particles.splice(0, particles.length - MAX);
     }
 
     function draw(){
@@ -488,18 +529,33 @@
       rafId = requestAnimationFrame(draw);
     }
 
-    function startConfetti(ms=2000){
+    function startConfetti(){
       confettiOn = true;
       canvas.classList.add("show");
-      makeParticles(220);
+
+      // Big initial wave
+      makeParticles(520);
+
+      // Then keep adding smaller waves ("one after another") while modal is open
+      if (burstInterval) clearInterval(burstInterval);
+      burstInterval = setInterval(() => {
+        if (!confettiOn) return;
+        addParticles(180);
+      }, 650);
+
       cancelAnimationFrame(rafId);
       draw();
-      setTimeout(stopConfetti, ms);
     }
 
     function stopConfetti(){
       confettiOn = false;
       canvas.classList.remove("show");
+
+      if (burstInterval) {
+        clearInterval(burstInterval);
+        burstInterval = null;
+      }
+
       cancelAnimationFrame(rafId);
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     }
