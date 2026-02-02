@@ -333,15 +333,52 @@
     .btn-love{
       border:none;
       border-radius:999px;
-      padding:12px 18px;
+      padding:14px 26px;
+      min-width:190px;
       font-weight:900;
+      font-size:17px;
+      letter-spacing:-.01em;
       cursor:pointer;
-      background: linear-gradient(180deg, var(--yes2), var(--yes));
       color:white;
-      box-shadow: 0 14px 30px rgba(0,0,0,.16);
+      position:relative;
+      overflow:hidden;
+      -webkit-tap-highlight-color: transparent;
+      background:
+        radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 55%),
+        linear-gradient(180deg, var(--yes2), var(--yes));
+      box-shadow:
+        0 18px 42px rgba(255,59,134,.22),
+        0 14px 30px rgba(0,0,0,.16);
+      transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
     }
-    .btn-love:hover{box-shadow: 0 18px 40px rgba(255,59,134,.30)}
-    .btn-love:active{transform: scale(.98)}
+    .btn-love::after{
+      content:"";
+      position:absolute;
+      inset:-2px -40%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+      transform: translateX(-60%);
+      opacity:0;
+      transition: transform .6s ease, opacity .25s ease;
+      pointer-events:none;
+    }
+    .btn-love:hover{
+      box-shadow:
+        0 22px 58px rgba(255,59,134,.28),
+        0 18px 40px rgba(0,0,0,.18);
+      filter: brightness(1.02);
+    }
+    .btn-love:hover::after{
+      transform: translateX(60%);
+      opacity:1;
+    }
+    .btn-love:active{transform: scale(.985)}
+    .btn-love:focus-visible{
+      outline:none;
+      box-shadow:
+        0 0 0 4px rgba(255,255,255,.65),
+        0 0 0 8px rgba(255,59,134,.35),
+        0 22px 58px rgba(255,59,134,.22);
+    }
 
     /* Confetti canvas */
     canvas#confetti{
