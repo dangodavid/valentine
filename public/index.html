@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ancuța, will you be my Valentine?</title>
+  <style>
+    :root{
+      --bg1:#f6c4d7;
+      --bg2:#f2a9c6;
+      --card:#ffffffcc;
+      --text:#1f1f1f;
+      --muted:#6b6b6b;
+      --yes:#ff3b86;
+      --yes2:#ff5ea3;
+      --no:#ffffff;
+      --shadow: 0 20px 60px rgba(0,0,0,.18);
+      --radius: 22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 30% 20%, #ffe4ef 0%, transparent 60%),
+        radial-gradient(900px 700px at 70% 60%, #ffd1e2 0%, transparent 55%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      overflow:hidden;
+    }
+    .wrap{
+      width:min(860px, 92vw);
+      padding:24px;
+      display:grid;
+      place-items:center;
+    }
+    .card{
+      width:min(720px, 92vw);
+      background:var(--card);
+      backdrop-filter: blur(10px);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,.55);
+      padding:28px 26px 24px;
+      position:relative;
+    }
+    .top{
+      display:grid;
+      place-items:center;
+      gap:14px;
+      margin-bottom:12px;
+    }
+    .cat{
+      width:84px;height:84px;
+      border-radius:50%;
+      background:#f3b072;
+      position:relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    .cat:before, .cat:after{
+      content:"";
+      position:absolute;
+      top:10px;
+      width:0;height:0;
+      border-left:12px solid transparent;
+      border-right:12px solid transparent;
+      border-bottom:18px solid #e79d5f;
+    }
+    .cat:before{left:10px; transform: rotate(-14deg);}
+    .cat:after{right:10px; transform: rotate(14deg);}
+    .eye{
+      position:absolute; top:34px; width:8px; height:8px; border-radius:50%;
+      background:#202020;
+    }
+    .eye.left{left:26px;}
+    .eye.right{right:26px;}
+    .nose{
+      position:absolute; top:48px; left:50%; transform:translateX(-50%);
+      width:10px; height:8px; border-radius: 0 0 10px 10px;
+      background:#ff6b8a;
+    }
+    .heart{
+      position:absolute;
+      right:-6px; top:-6px;
+      width:26px; height:26px;
+      transform: rotate(20deg);
+      background: radial-gradient(circle at 30% 30%, #ff86b6, #ff2f7a);
+      clip-path: path("M 13 24 C 3 17 0 12 0 8 C 0 3 4 0 8 0 C 10 0 12 1 13 3 C 14 1 16 0 18 0 C 22 0 26 3 26 8 C 26 12 23 17 13 24 Z");
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,.15));
+    }
+    h1{
+      margin:0;
+      font-size: clamp(22px, 3.4vw, 34px);
+      font-weight:800;
+      letter-spacing:-.02em;
+      text-align:center;
+    }
+    h1 .name{
+      font-weight:900;
+      text-transform:lowercase;
+    }
+    .sub{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      text-align:center;
+    }
+
+    .arena{
+      margin-top:18px;
+      position:relative;
+      height:170px;
+      border-radius:16px;
+      background: rgba(255,255,255,.45);
+      border:1px solid rgba(255,255,255,.65);
+      overflow:hidden;
+    }
+
+    .btn{
+      position:absolute;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      border:none;
+      cursor:pointer;
+      font-weight:800;
+      border-radius:999px;
+      padding:16px 26px;
+      font-size:18px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.14);
+      transition: transform .12s ease, box-shadow .12s ease;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      min-width: 140px;
+    }
+    .btn:active{transform: scale(.98)}
+    .btn-yes{
+      left: 16%;
+      top: 56%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(180deg, var(--yes2), var(--yes));
+      color:white;
+    }
+    .btn-yes:hover{box-shadow: 0 18px 40px rgba(255,59,134,.35)}
+    .btn-no{
+      left: 66%;
+      top: 56%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,.92);
+      color:#222;
+      border:1px solid rgba(0,0,0,.08);
+    }
+    .hint{
+      position:absolute;
+      bottom:12px;
+      width:100%;
+      text-align:center;
+      font-size:13px;
+      color:#5c5c5c;
+      padding:0 12px;
+    }
+
+    /* Result modal */
+    .overlay{
+      position:fixed; inset:0;
+      display:none;
+      place-items:center;
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+      z-index:50;
+      padding:18px;
+    }
+    .overlay.show{display:grid;}
+    .modal{
+      width:min(760px, 94vw);
+      background: rgba(255,255,255,.95);
+      border-radius: 26px;
+      box-shadow: 0 30px 90px rgba(0,0,0,.35);
+      overflow:hidden;
+      border:1px solid rgba(0,0,0,.08);
+    }
+    .modalTop{
+      padding:22px 22px 12px;
+      text-align:center;
+    }
+    .yay{
+      margin:0;
+      font-size: clamp(26px, 4vw, 40px);
+      letter-spacing:-.02em;
+      font-weight:900;
+    }
+    .modalSub{
+      margin:6px 0 0;
+      color:#444;
+      font-size:14px;
+    }
+    .media{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:0;
+      background: #111;
+    }
+    .media img{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    .modalActions{
+      padding:16px 18px 18px;
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      background: rgba(255,255,255,.9);
+    }
+    .btn-close{
+      border:none;
+      border-radius:999px;
+      padding:12px 18px;
+      font-weight:800;
+      cursor:pointer;
+      background: #1f1f1f;
+      color:white;
+    }
+    .btn-close:hover{filter: brightness(1.05);}
+
+    /* Confetti canvas */
+    canvas#confetti{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:60;
+      display:none;
+    }
+    canvas#confetti.show{display:block;}
+
+    /* Mobile tuning */
+    @media (max-width:520px){
+      .arena{height:190px;}
+      .btn{min-width: 132px; font-size:17px;}
+      .btn-yes{left: 24%;}
+      .btn-no{left: 72%;}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div class="cat" aria-hidden="true">
+          <span class="heart"></span>
+          <span class="eye left"></span>
+          <span class="eye right"></span>
+          <span class="nose"></span>
+        </div>
+
+        <div>
+          <h1><span class="name" id="name">nirali</span> will you be my valentine?</h1>
+          <p class="sub">Try to say “No”.</p>
+        </div>
+      </div>
+
+      <div class="arena" id="arena">
+        <button class="btn btn-yes" id="yesBtn">Yes</button>
+        <button class="btn btn-no" id="noBtn" tabindex="-1" aria-label="No (good luck)"><span>No</span></button>
+        <div class="hint" id="hint">“No” seems a bit shy.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Valentine result">
+    <div class="modal">
+      <div class="modalTop">
+        <p class="yay">YAY! 🎉</p>
+        <p class="modalSub" id="modalSub">Correct answer.</p>
+      </div>
+
+      <!-- Replace the images below with your preferred GIFs -->
+      <div class="media">
+        <!-- Fireworks/confetti GIF -->
+        <img id="fireworksGif" alt="Celebration" src="https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif" />
+        <!-- Relieved face GIF -->
+        <img id="reliefGif" alt="Relief" src="https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif" />
+      </div>
+
+      <div class="modalActions">
+        <button class="btn-close" id="closeBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== Customize here ======
+    const RECIPIENT_NAME = "nirali"; // change this
+    const YES_MESSAGE = "You just made my day.";
+    // ============================
+
+    const nameEl = document.getElementById("name");
+    const arena = document.getElementById("arena");
+    const noBtn = document.getElementById("noBtn");
+    const yesBtn = document.getElementById("yesBtn");
+    const overlay = document.getElementById("overlay");
+    const closeBtn = document.getElementById("closeBtn");
+    const modalSub = document.getElementById("modalSub");
+
+    nameEl.textContent = RECIPIENT_NAME.toLowerCase();
+    modalSub.textContent = YES_MESSAGE;
+
+    // Helper: clamp
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+    // Move "No" away from pointer when it gets close
+    let noPos = { x: 0.66, y: 0.56 }; // relative positions inside arena (0..1)
+    const dangerRadius = 90;          // px: how close triggers fleeing
+    const step = 140;                 // px: how far it jumps when fleeing
+
+    function placeNo(relX, relY){
+      noPos.x = clamp(relX, 0.12, 0.88);
+      noPos.y = clamp(relY, 0.22, 0.78);
+      const rect = arena.getBoundingClientRect();
+      noBtn.style.left = (noPos.x * rect.width) + "px";
+      noBtn.style.top  = (noPos.y * rect.height) + "px";
+      noBtn.style.transform = "translate(-50%, -50%)";
+    }
+
+    // Initial placement after layout
+    requestAnimationFrame(() => placeNo(noPos.x, noPos.y));
+    window.addEventListener("resize", () => placeNo(noPos.x, noPos.y));
+
+    function fleeFrom(clientX, clientY){
+      const rect = arena.getBoundingClientRect();
+      const bx = noPos.x * rect.width;
+      const by = noPos.y * rect.height;
+
+      const px = clientX - rect.left;
+      const py = clientY - rect.top;
+
+      const dx = bx - px;
+      const dy = by - py;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > dangerRadius) return;
+
+      // Move away along vector, with a bit of randomness to avoid edges
+      const ux = (dx / (dist || 1));
+      const uy = (dy / (dist || 1));
+
+      const nx = (bx + ux * step + (Math.random() - 0.5) * 60) / rect.width;
+      const ny = (by + uy * step + (Math.random() - 0.5) * 40) / rect.height;
+
+      placeNo(nx, ny);
+    }
+
+    // Mouse / pointer tracking
+    arena.addEventListener("pointermove", (e) => {
+      fleeFrom(e.clientX, e.clientY);
+    });
+
+    // Also flee on hover / attempt to focus (desktop)
+    noBtn.addEventListener("pointerenter", (e) => {
+      fleeFrom(e.clientX, e.clientY);
+    });
+
+    // Touch devices: if user taps near, it flees
+    arena.addEventListener("pointerdown", (e) => {
+      // If they try to tap the "No" region, flee
+      fleeFrom(e.clientX, e.clientY);
+    });
+
+    // Yes -> show modal + confetti
+    yesBtn.addEventListener("click", () => {
+      overlay.classList.add("show");
+      startConfetti(2400);
+    });
+
+    function closeModal(){
+      overlay.classList.remove("show");
+      stopConfetti();
+    }
+
+    closeBtn.addEventListener("click", closeModal);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeModal();
+    });
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && overlay.classList.contains("show")) closeModal();
+    });
+
+    // ====== Minimal confetti (no libraries) ======
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+
+    let confettiOn = false;
+    let particles = [];
+    let rafId = null;
+
+    function resizeCanvas(){
+      canvas.width = window.innerWidth * devicePixelRatio;
+      canvas.height = window.innerHeight * devicePixelRatio;
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function makeParticles(count){
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const colors = ["#ff3b86","#ff5ea3","#ffd1e2","#ffffff","#ffcc00","#00d4ff","#7cff6b"];
+      particles = Array.from({length: count}, () => ({
+        x: Math.random() * w,
+        y: -20 - Math.random() * h * 0.3,
+        r: 2 + Math.random() * 4,
+        vy: 2 + Math.random() * 6,
+        vx: -2 + Math.random() * 4,
+        a: Math.random() * Math.PI * 2,
+        va: -0.2 + Math.random() * 0.4,
+        c: colors[(Math.random() * colors.length) | 0],
+      }));
+    }
+
+    function draw(){
+      if (!confettiOn) return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      for (const p of particles){
+        p.x += p.vx;
+        p.y += p.vy;
+        p.a += p.va;
+
+        if (p.y > h + 40){
+          p.y = -20;
+          p.x = Math.random() * w;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.a);
+        ctx.fillStyle = p.c;
+        ctx.fillRect(-p.r, -p.r, p.r * 2.2, p.r * 1.6);
+        ctx.restore();
+      }
+
+      rafId = requestAnimationFrame(draw);
+    }
+
+    function startConfetti(ms=2000){
+      confettiOn = true;
+      canvas.classList.add("show");
+      makeParticles(220);
+      cancelAnimationFrame(rafId);
+      draw();
+      setTimeout(stopConfetti, ms);
+    }
+
+    function stopConfetti(){
+      confettiOn = false;
+      canvas.classList.remove("show");
+      cancelAnimationFrame(rafId);
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+  </script>
+</body>
+</html>
