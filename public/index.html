@@ -447,9 +447,11 @@
     const ctx = canvas.getContext("2d");
 
     let confettiOn = false;
+    let confettiMode = "off"; // "burst" | "drizzle" | "off"
     let particles = [];
     let rafId = null;
     let burstInterval = null;
+    let stopTimeout = null;
 
     const CONFETTI_COLORS = [
       "#ff3b86",
@@ -471,17 +473,18 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    function makeParticle(w, h){
+    function makeParticle(w, h, mode = confettiMode){
+      const drizzle = mode === "drizzle";
       return {
         x: Math.random() * w,
         // Spawn above the viewport so it "rains" from the top
         y: -60 - Math.random() * h * 0.25,
         r: 2 + Math.random() * 4,
-        // Slightly faster + more varied fall speed for a denser shower
-        vy: 3 + Math.random() * 8,
-        vx: -2.2 + Math.random() * 4.4,
+        // Drizzle is calmer; burst is more energetic
+        vy: (drizzle ? (2 + Math.random() * 4) : (3 + Math.random() * 8)),
+        vx: (drizzle ? (-1.2 + Math.random() * 2.4) : (-2.2 + Math.random() * 4.4)),
         a: Math.random() * Math.PI * 2,
-        va: -0.25 + Math.random() * 0.5,
+        va: (drizzle ? (-0.18 + Math.random() * 0.36) : (-0.25 + Math.random() * 0.5)),
         c: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0],
       };
     }
@@ -489,17 +492,34 @@
     function makeParticles(count){
       const w = window.innerWidth;
       const h = window.innerHeight;
-      particles = Array.from({length: count}, () => makeParticle(w, h));
+      particles = Array.from({length: count}, () => makeParticle(w, h, confettiMode));
     }
 
     function addParticles(count){
       const w = window.innerWidth;
       const h = window.innerHeight;
-      for (let i = 0; i < count; i++) particles.push(makeParticle(w, h));
+      for (let i = 0; i < count; i++) particles.push(makeParticle(w, h, confettiMode));
 
       // Keep a hard cap to avoid runaway CPU/GPU usage
       const MAX = 900;
       if (particles.length > MAX) particles.splice(0, particles.length - MAX);
+    }
+    function startDrizzle(){
+      confettiOn = true;
+      confettiMode = "drizzle";
+      canvas.classList.add("show");
+
+      // Stop burst waves
+      if (burstInterval) {
+        clearInterval(burstInterval);
+        burstInterval = null;
+      }
+
+      // Keep only a small, steady amount that recycles
+      makeParticles(70);
+
+      cancelAnimationFrame(rafId);
+      draw();
     }
 
     function draw(){
@@ -529,19 +549,27 @@
       rafId = requestAnimationFrame(draw);
     }
 
-    function startConfetti(){
+    function startConfetti(ms = 7000){
       confettiOn = true;
+      confettiMode = "burst";
       canvas.classList.add("show");
 
-      // Big initial wave
-      makeParticles(520);
+      // Big initial wave (moderate)
+      makeParticles(450);
 
-      // Then keep adding smaller waves ("one after another") while modal is open
+      // Then add waves (one after another) while in burst mode
       if (burstInterval) clearInterval(burstInterval);
       burstInterval = setInterval(() => {
-        if (!confettiOn) return;
-        addParticles(180);
-      }, 650);
+        if (!confettiOn || confettiMode !== "burst") return;
+        addParticles(140);
+      }, 700);
+
+      // After the burst duration, switch to a gentle drizzle (don’t stop fully)
+      if (stopTimeout) clearTimeout(stopTimeout);
+      stopTimeout = setTimeout(() => {
+        stopTimeout = null;
+        if (confettiOn && confettiMode === "burst") startDrizzle();
+      }, ms);
 
       cancelAnimationFrame(rafId);
       draw();
@@ -549,11 +577,17 @@
 
     function stopConfetti(){
       confettiOn = false;
+      confettiMode = "off";
       canvas.classList.remove("show");
 
       if (burstInterval) {
         clearInterval(burstInterval);
         burstInterval = null;
+      }
+
+      if (stopTimeout) {
+        clearTimeout(stopTimeout);
+        stopTimeout = null;
       }
 
       cancelAnimationFrame(rafId);
