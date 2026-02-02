@@ -294,6 +294,55 @@
     }
     .btn-close:hover{filter: brightness(1.05);}
 
+    
+    /* Sparkle burst (premium) */
+    .sparkleLayer{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:65; /* above confetti (60) */
+      overflow:hidden;
+    }
+
+    .sparkle{
+      position:fixed;
+      left:0;
+      top:0;
+      width: var(--sz, 14px);
+      height: var(--sz, 14px);
+      transform: translate(-50%, -50%) scale(.35) rotate(0deg);
+      opacity:0;
+      mix-blend-mode: normal;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.14));
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,1) 0%, rgba(255,255,255,.92) 22%, rgba(255,255,255,0) 68%),
+        linear-gradient(transparent 44%, rgba(255,255,255,.95) 50%, transparent 56%),
+        linear-gradient(90deg, transparent 44%, rgba(255,255,255,.95) 50%, transparent 56%);
+      border-radius: 10px;
+      animation: sparkleBurst var(--dur, 1100ms) cubic-bezier(.15,.75,.25,1) forwards;
+      will-change: transform, opacity;
+    }
+
+    @keyframes sparkleBurst{
+      0%{ opacity:0; transform: translate(-50%, -50%) scale(.35) rotate(0deg); }
+      12%{ opacity:1; }
+      40%{ opacity:1; transform: translate(calc(-50% + (var(--dx, 0px) * .35)), calc(-50% + (var(--dy, 0px) * .35))) scale(1.05) rotate(var(--rot, 90deg)); }
+      100%{ opacity:0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(.25) rotate(calc(var(--rot, 90deg) + 120deg)); }
+    }
+
+    .btn-love{
+      border:none;
+      border-radius:999px;
+      padding:12px 18px;
+      font-weight:900;
+      cursor:pointer;
+      background: linear-gradient(180deg, var(--yes2), var(--yes));
+      color:white;
+      box-shadow: 0 14px 30px rgba(0,0,0,.16);
+    }
+    .btn-love:hover{box-shadow: 0 18px 40px rgba(255,59,134,.30)}
+    .btn-love:active{transform: scale(.98)}
+
     /* Confetti canvas */
     canvas#confetti{
       position:fixed;
@@ -315,6 +364,7 @@
 </head>
 <body>
   <canvas id="confetti"></canvas>
+  <div class="sparkleLayer" id="sparkleLayer" aria-hidden="true"></div>
 
   <div class="wrap">
     <div class="card">
@@ -362,7 +412,7 @@
       </div>
 
       <div class="modalActions">
-        <button class="btn-close" id="closeBtn">Close</button>
+        <button class="btn-love" id="loveBtn">More love</button>
       </div>
     </div>
   </div>
@@ -378,7 +428,8 @@
     const noBtn = document.getElementById("noBtn");
     const yesBtn = document.getElementById("yesBtn");
     const overlay = document.getElementById("overlay");
-    const closeBtn = document.getElementById("closeBtn");
+    const loveBtn = document.getElementById("loveBtn");
+    const sparkleLayer = document.getElementById("sparkleLayer");
     const modalSub = document.getElementById("modalSub");
     const mediaBox = document.getElementById("mediaBox");
     const finaleVideo = document.getElementById("finaleVideo");
@@ -421,6 +472,102 @@
       if (videoRevealTimer) {
         clearTimeout(videoRevealTimer);
         videoRevealTimer = null;
+      }
+    }
+
+    function clearSparkles(){
+      if (!sparkleLayer) return;
+      sparkleLayer.innerHTML = "";
+    }
+
+    function burstSparkles(count = 34){
+      if (!sparkleLayer || !loveBtn) return;
+
+      const rect = loveBtn.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      const mediaRect = mediaBox ? mediaBox.getBoundingClientRect() : null;
+
+      // Premium palette: white + warm gold + soft pink
+      const colors = [
+        "rgba(255,255,255,1)",
+        "rgba(255,240,210,1)",
+        "rgba(255,210,230,1)",
+        "rgba(255,255,255,.95)"
+      ];
+
+      const mainCount = count;
+      const ambientCount = Math.round(count * 0.55);
+
+      // 1) Main burst from the button (wider radius + bigger sparkles)
+      for (let i = 0; i < mainCount; i++){
+        const el = document.createElement("div");
+        el.className = "sparkle";
+
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 28 + Math.random() * 260; // wider spread
+        const dx = Math.cos(ang) * dist;
+        const dy = Math.sin(ang) * dist - (10 + Math.random() * 14);
+
+        const sz = 14 + Math.random() * 22;      // bigger
+        const dur = 1100 + Math.random() * 900;  // slightly longer
+        const delay = Math.random() * 180;
+        const rot = (-35 + Math.random() * 70) + "deg";
+        const c = colors[(Math.random() * colors.length) | 0];
+
+        el.style.left = cx + "px";
+        el.style.top = cy + "px";
+        el.style.setProperty("--dx", dx + "px");
+        el.style.setProperty("--dy", dy + "px");
+        el.style.setProperty("--sz", sz + "px");
+        el.style.setProperty("--dur", dur + "ms");
+        el.style.setProperty("--rot", rot);
+        el.style.animationDelay = delay + "ms";
+
+        el.style.background =
+          `radial-gradient(circle at 50% 50%, ${c} 0%, rgba(255,255,255,.92) 22%, rgba(255,255,255,0) 68%),` +
+          `linear-gradient(transparent 44%, rgba(255,255,255,.95) 50%, transparent 56%),` +
+          `linear-gradient(90deg, transparent 44%, rgba(255,255,255,.95) 50%, transparent 56%)`;
+
+        sparkleLayer.appendChild(el);
+        el.addEventListener("animationend", () => el.remove());
+      }
+
+      // 2) Ambient sparkles over the video area (so it feels "on screen", not just near the button)
+      for (let i = 0; i < ambientCount; i++){
+        const el = document.createElement("div");
+        el.className = "sparkle";
+
+        const c = colors[(Math.random() * colors.length) | 0];
+        const sz = 10 + Math.random() * 18;
+        const dur = 900 + Math.random() * 850;
+        const delay = 120 + Math.random() * 280;
+        const rot = (-25 + Math.random() * 50) + "deg";
+
+        const x = mediaRect ? (mediaRect.left + Math.random() * mediaRect.width) : (Math.random() * window.innerWidth);
+        const y = mediaRect ? (mediaRect.top + Math.random() * mediaRect.height) : (Math.random() * window.innerHeight);
+
+        // Small drift so it twinkles + moves a bit
+        const dx = (-40 + Math.random() * 80);
+        const dy = (-60 + Math.random() * 90);
+
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        el.style.setProperty("--dx", dx + "px");
+        el.style.setProperty("--dy", dy + "px");
+        el.style.setProperty("--sz", sz + "px");
+        el.style.setProperty("--dur", dur + "ms");
+        el.style.setProperty("--rot", rot);
+        el.style.animationDelay = delay + "ms";
+
+        el.style.background =
+          `radial-gradient(circle at 50% 50%, ${c} 0%, rgba(255,255,255,.92) 22%, rgba(255,255,255,0) 68%),` +
+          `linear-gradient(transparent 44%, rgba(255,255,255,.95) 50%, transparent 56%),` +
+          `linear-gradient(90deg, transparent 44%, rgba(255,255,255,.95) 50%, transparent 56%)`;
+
+        sparkleLayer.appendChild(el);
+        el.addEventListener("animationend", () => el.remove());
       }
     }
 
@@ -534,9 +681,12 @@
       stopConfetti();
       stopFinaleVideo();
       resetVideoReveal();
+      clearSparkles();
     }
 
-    closeBtn.addEventListener("click", closeModal);
+    loveBtn.addEventListener("click", () => {
+      burstSparkles(34);
+    });
     overlay.addEventListener("click", (e) => {
       if (!canCloseOverlay) return;
       if (e.target === overlay) closeModal();
