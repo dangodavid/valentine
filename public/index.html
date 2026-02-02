@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ancuța, will you be my Valentine?</title>
+  <title>Will you be my Valentine?</title>
   <style>
     :root{
       --bg1:#f6c4d7;
@@ -100,7 +100,6 @@
     }
     h1 .name{
       font-weight:900;
-      text-transform:lowercase;
     }
     .sub{
       margin:6px 0 0;
@@ -260,7 +259,7 @@
         </div>
 
         <div>
-          <h1><span class="name" id="name">Ancuța</span> will you be my valentine?</h1>
+          <h1><span class="name" id="name">Ancuța,</span> will you be my valentine?</h1>
           <p class="sub">Try to say “No”.</p>
         </div>
       </div>
@@ -284,8 +283,6 @@
       <div class="media">
         <!-- Fireworks/confetti GIF -->
         <img id="fireworksGif" alt="Celebration" src="https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif" />
-        <!-- Relieved face GIF -->
-        <img id="reliefGif" alt="Relief" src="https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif" />
       </div>
 
       <div class="modalActions">
@@ -296,7 +293,7 @@
 
   <script>
     // ====== Customize here ======
-    const RECIPIENT_NAME = "Ancuța"; // change this
+    const RECIPIENT_NAME = "Ancuța, "; // change this
     const YES_MESSAGE = "You just made my day.";
     // ============================
 
@@ -308,7 +305,7 @@
     const closeBtn = document.getElementById("closeBtn");
     const modalSub = document.getElementById("modalSub");
 
-    nameEl.textContent = RECIPIENT_NAME.toLowerCase();
+    nameEl.textContent = RECIPIENT_NAME;
     modalSub.textContent = YES_MESSAGE;
 
     // Helper: clamp
@@ -316,12 +313,22 @@
 
     // Move "No" away from pointer when it gets close
     let noPos = { x: 0.66, y: 0.56 }; // relative positions inside arena (0..1)
-    const dangerRadius = 90;          // px: how close triggers fleeing
-    const step = 140;                 // px: how far it jumps when fleeing
+    const dangerRadius = 160;         // px: more sensitive (reacts sooner)
+    const step = 260;                 // px: jumps much farther
 
     function placeNo(relX, relY){
+      const edgePaddingX = 0.18;
+      const edgePaddingY = 0.26;
+
+      // If too close to any edge, push it aggressively back toward center
+      if (relX < edgePaddingX) relX = 0.5 + Math.random() * 0.25;
+      if (relX > 1 - edgePaddingX) relX = 0.5 - Math.random() * 0.25;
+      if (relY < edgePaddingY) relY = 0.5 + Math.random() * 0.20;
+      if (relY > 1 - edgePaddingY) relY = 0.5 - Math.random() * 0.20;
+
       noPos.x = clamp(relX, 0.12, 0.88);
       noPos.y = clamp(relY, 0.22, 0.78);
+
       const rect = arena.getBoundingClientRect();
       noBtn.style.left = (noPos.x * rect.width) + "px";
       noBtn.style.top  = (noPos.y * rect.height) + "px";
@@ -368,8 +375,13 @@
 
     // Touch devices: if user taps near, it flees
     arena.addEventListener("pointerdown", (e) => {
-      // If they try to tap the "No" region, flee
+      if (e.target === yesBtn) return;
       fleeFrom(e.clientX, e.clientY);
+    });
+
+    // Ensure Yes always responds instantly (avoid arena interference)
+    yesBtn.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
     });
 
     // Yes -> show modal + confetti
