@@ -357,16 +357,17 @@
       filter: saturate(1.0) brightness(1.08) contrast(1.06);
     }
     .modalActions{
-      padding:14px 18px 18px;
+      padding:16px 18px 22px;
       display:flex;
       justify-content:center;
       gap:10px;
       width:100%;
       max-width:980px;
       margin:0 auto;
-      background: rgba(255,255,255,.62);
-      backdrop-filter: blur(14px);
-      border-top: 1px solid rgba(255,255,255,.70);
+      background: transparent;
+      backdrop-filter: none;
+      border-top: none;
+      box-shadow: none;
     }
     .btn-close{
       border:none;
@@ -487,7 +488,7 @@
       .yayEmoji{font-size: 22px;}
       .modalSub{font-size: 16px; max-width: 92vw;}
       .media{height: clamp(280px, 45vh, 360px);}
-      .modalActions{max-width: 92vw; padding: 12px 14px 16px;}
+      .modalActions{max-width: 92vw; padding: 14px 12px 18px; background: transparent; backdrop-filter: none;}
       .btn-love{min-width: 170px; padding: 13px 22px; font-size: 16px;}
     }
   </style>
