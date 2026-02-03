@@ -179,8 +179,48 @@
       color:white;
       z-index: 3;
       touch-action: manipulation;
+      position: absolute; /* ensure pseudo-elements position correctly */
+      overflow: hidden;
     }
     .btn-yes:hover{box-shadow: 0 18px 40px rgba(255,59,134,.35)}
+
+    /* Material-like press feedback (no movement; works with translate positioning) */
+    .btn-yes::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: rgba(255,255,255,.16); /* state layer */
+      opacity:0;
+      transition: opacity 160ms ease;
+      pointer-events:none;
+    }
+
+    .btn-yes::after{
+      content:"";
+      position:absolute;
+      left: var(--rx, 50%);
+      top: var(--ry, 50%);
+      width: 12px;
+      height: 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.38);
+      transform: translate(-50%, -50%) scale(0);
+      opacity:0;
+      pointer-events:none;
+    }
+
+    @keyframes yesRipple{
+      0%   { transform: translate(-50%, -50%) scale(0); opacity:.35; }
+      100% { transform: translate(-50%, -50%) scale(18); opacity:0; }
+    }
+
+    .btn-yes.yesGo::before{ opacity:1; }
+    .btn-yes.yesGo::after{ animation: yesRipple 320ms cubic-bezier(0.2, 0, 0, 1) 1; }
+
+    @media (prefers-reduced-motion: reduce){
+      .btn-yes::before{ transition:none; }
+      .btn-yes.yesGo::after{ animation:none; opacity:0; }
+    }
     .btn-no{
       left: 76%;
       top: 56%;
@@ -568,14 +608,14 @@
 
         <div>
           <h1><span class="name" id="name">Ancuța,</span> will you be my valentine?</h1>
-          <p class="sub">Try to say “No”.</p>
+          <p class="sub">Try to say „No”.</p>
         </div>
       </div>
 
       <div class="arena" id="arena">
         <button class="btn btn-yes" id="yesBtn">Yes</button>
         <button class="btn btn-no" id="noBtn" tabindex="-1" aria-label="No (good luck)"><span>No</span></button>
-        <div class="hint" id="hint">“No” seems a bit shy.</div>
+        <div class="hint" id="hint">„No” seems a bit shy.</div>
       </div>
     </div>
   </div>
@@ -979,21 +1019,40 @@ function startBeatSparkles(durationMs = 2600) {
       fleeFrom(e.clientX, e.clientY);
     });
 
+    let yesInFlight = false;
+
     function activateYes(e){
-      if (overlay.classList.contains("show")) return;
+      if (overlay.classList.contains("show") || yesInFlight) return;
 
       // Allow only primary button for mouse; touch/pen are fine
       if (e && e.type === "pointerdown" && e.pointerType === "mouse" && e.button !== 0) return;
 
       if (e){
-        // Prevent scroll/drag so the press doesn't get interpreted as movement
         if (e.cancelable) e.preventDefault();
         e.stopPropagation();
-        // Keep the pointer with the button even if the overlay appears
         try { if (e.pointerId != null) yesBtn.setPointerCapture(e.pointerId); } catch(_){ }
       }
 
-      openResult();
+      // Material-like ripple origin
+      try {
+        const r = yesBtn.getBoundingClientRect();
+        const x = (e && typeof e.clientX === "number") ? (e.clientX - r.left) : (r.width / 2);
+        const y = (e && typeof e.clientY === "number") ? (e.clientY - r.top) : (r.height / 2);
+        yesBtn.style.setProperty("--rx", x + "px");
+        yesBtn.style.setProperty("--ry", y + "px");
+      } catch(_){ }
+
+      // Play feedback (no movement)
+      yesBtn.classList.remove("yesGo");
+      void yesBtn.offsetWidth;
+      yesBtn.classList.add("yesGo");
+
+      yesInFlight = true;
+      setTimeout(() => {
+        yesInFlight = false;
+        openResult();
+        setTimeout(() => yesBtn.classList.remove("yesGo"), 420);
+      }, 70);
     }
 
     // Fire on pointerdown for maximum reliability on mobile
@@ -1005,7 +1064,7 @@ function startBeatSparkles(durationMs = 2600) {
       activateYes(e);
     });
 
-    let canCloseOverlay = true;
+let canCloseOverlay = true;
 
     function openResult(){
       if (overlay.classList.contains("show")) return;
@@ -1034,6 +1093,8 @@ function startBeatSparkles(durationMs = 2600) {
       resetVideoReveal();
       clearSparkles();
       stopBeatSparkles();
+      yesInFlight = false;
+      yesBtn.classList.remove("yesGo");
     }
 
 
