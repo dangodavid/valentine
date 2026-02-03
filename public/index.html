@@ -417,6 +417,30 @@
       100%{ opacity:0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(.25) rotate(calc(var(--rot, 90deg) + 120deg)); }
     }
 
+    @keyframes loveGlow{
+      0%, 100%{
+        box-shadow:
+          0 18px 44px rgba(255,59,134,.18),
+          0 14px 30px rgba(0,0,0,.14);
+        filter: brightness(1.00);
+      }
+      50%{
+        box-shadow:
+          0 24px 62px rgba(255,59,134,.28),
+          0 16px 34px rgba(0,0,0,.16);
+        filter: brightness(1.015);
+      }
+    }
+
+    @keyframes loveClickWobble{
+      0%   { transform: none; }
+      18%  { transform: translate(-6px, -1px); }
+      38%  { transform: translate(6px, -2px); }
+      58%  { transform: translate(-3px, -1px); }
+      78%  { transform: translate(1px, -0.5px); }
+      100% { transform: none; }
+    }
+
     .btn-love{
       border:none;
       border-radius:999px;
@@ -430,14 +454,32 @@
       position:relative;
       overflow:hidden;
       -webkit-tap-highlight-color: transparent;
+      transform-origin: 50% 60%;
+      will-change: transform, box-shadow, filter;
+
       background:
-        radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 55%),
+        radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.34) 0%, rgba(255,255,255,0) 55%),
         linear-gradient(180deg, var(--yes2), var(--yes));
+
+      /* subtle slow glow */
       box-shadow:
-        0 18px 42px rgba(255,59,134,.22),
-        0 14px 30px rgba(0,0,0,.16);
-      transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
+        0 18px 44px rgba(255,59,134,.18),
+        0 14px 30px rgba(0,0,0,.14);
+      animation: loveGlow 3.2s ease-in-out infinite;
+
+      transition:
+        transform .14s ease,
+        box-shadow .22s ease,
+        filter .22s ease;
     }
+
+    .btn-love.clicked{
+      /* keep the slow glow + add the one-shot click wobble */
+      animation:
+        loveGlow 3.2s ease-in-out infinite,
+        loveClickWobble 260ms cubic-bezier(0.2, 0, 0, 1) 1;
+    }
+
     .btn-love::after{
       content:"";
       position:absolute;
@@ -448,23 +490,38 @@
       transition: transform .6s ease, opacity .25s ease;
       pointer-events:none;
     }
+
+    /* Desktop: micro tilt + slightly stronger glow */
     .btn-love:hover{
+      transform: none;
       box-shadow:
-        0 22px 58px rgba(255,59,134,.28),
+        0 28px 78px rgba(255,59,134,.32),
         0 18px 40px rgba(0,0,0,.18);
       filter: brightness(1.02);
     }
+
     .btn-love:hover::after{
       transform: translateX(60%);
       opacity:1;
     }
-    .btn-love:active{transform: scale(.985)}
+
+    .btn-love:active{
+      transform: none;
+      filter: brightness(1.01);
+    }
+
     .btn-love:focus-visible{
       outline:none;
       box-shadow:
         0 0 0 4px rgba(255,255,255,.65),
         0 0 0 8px rgba(255,59,134,.35),
-        0 22px 58px rgba(255,59,134,.22);
+        0 26px 76px rgba(255,59,134,.24);
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .btn-love{ animation: none; }
+      .btn-love::after{ transition: none; }
+      .btn-love.clicked{ animation: none; }
     }
 
     /* Confetti canvas */
@@ -979,7 +1036,19 @@ function startBeatSparkles(durationMs = 2600) {
       stopBeatSparkles();
     }
 
+
+    function triggerLoveBtnClickMotion(){
+      if (!loveBtn) return;
+      // Restart animation reliably
+      loveBtn.classList.remove("clicked");
+      // force reflow
+      void loveBtn.offsetWidth;
+      loveBtn.classList.add("clicked");
+      setTimeout(() => loveBtn.classList.remove("clicked"), 320);
+    }
+
 loveBtn.addEventListener("click", () => {
+  triggerLoveBtnClickMotion();
   // Pure visual replay (longer, cascading sparkles)
   burstSparkles(26);
   setTimeout(() => burstSparkles(20), 220);
