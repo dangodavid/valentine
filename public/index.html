@@ -530,7 +530,7 @@
         <img id="fireworksGif" alt="Celebration" src="https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif" />
 
         <!-- MP4 video (fades in on top) -->
-        <video id="finaleVideo" playsinline webkit-playsinline preload="auto">
+        <video id="finaleVideo" playsinline webkit-playsinline preload="auto" crossorigin="anonymous">
           <source src="https://media.daviddango.com/coldplay.mp4" type="video/mp4" />
         </video>
 
@@ -560,6 +560,89 @@
     const modalSub = document.getElementById("modalSub");
     const mediaBox = document.getElementById("mediaBox");
     const finaleVideo = document.getElementById("finaleVideo");
+
+    // ====== Beat-synced sparkles (Web Audio) ======
+let audioCtx = null;
+let analyser = null;
+let freqData = null;
+let beatRaf = null;
+let beatStopTimer = null;
+let lastBeatAt = 0;
+
+async function ensureAnalyser() {
+  if (!finaleVideo) return false;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return false;
+
+  try {
+    if (!audioCtx) audioCtx = new Ctx();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+
+    if (!analyser) {
+      const source = audioCtx.createMediaElementSource(finaleVideo);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.85;
+
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+
+      freqData = new Uint8Array(analyser.frequencyBinCount);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function stopBeatSparkles() {
+  if (beatRaf) cancelAnimationFrame(beatRaf);
+  beatRaf = null;
+  if (beatStopTimer) clearTimeout(beatStopTimer);
+  beatStopTimer = null;
+}
+
+function startBeatSparkles(durationMs = 2600) {
+  if (!analyser || !freqData || !audioCtx) return;
+  stopBeatSparkles();
+
+  let ema = 0;
+  let emaDev = 0;
+  const cooldownMs = 170;
+  const minThreshold = 0.014;
+
+  const sr = audioCtx.sampleRate;
+  const binHz = sr / analyser.fftSize;
+  const startBin = Math.max(0, Math.floor(40 / binHz));
+  const endBin = Math.min(freqData.length - 1, Math.floor(180 / binHz));
+
+  function frame(t) {
+    analyser.getByteFrequencyData(freqData);
+
+    let sum = 0;
+    for (let i = startBin; i <= endBin; i++) sum += freqData[i];
+    const energy = sum / ((endBin - startBin + 1) * 255);
+
+    const alpha = 0.08;
+    ema = ema + alpha * (energy - ema);
+    const diff = energy - ema;
+
+    const beta = 0.10;
+    emaDev = emaDev + beta * (Math.abs(diff) - emaDev);
+    const threshold = Math.max(minThreshold, emaDev * 1.6);
+
+    if (diff > threshold && (t - lastBeatAt) > cooldownMs) {
+      lastBeatAt = t;
+      burstSparkles(14);
+    }
+
+    beatRaf = requestAnimationFrame(frame);
+  }
+
+  beatRaf = requestAnimationFrame(frame);
+  beatStopTimer = setTimeout(stopBeatSparkles, durationMs);
+}
+
     function playFinaleVideo(){
       if (!finaleVideo) return;
       try {
@@ -831,6 +914,10 @@
       startConfetti();
       playFinaleVideo();
       scheduleVideoReveal();
+      // Start beat-synced sparkles automatically with the music
+      ensureAnalyser().then((ok) => {
+        if (ok) startBeatSparkles(6200); // sync for first ~6.2s
+      });
 
       // Arm closing after the current gesture/event loop finishes
       requestAnimationFrame(() => {
@@ -844,11 +931,18 @@
       stopFinaleVideo();
       resetVideoReveal();
       clearSparkles();
+      stopBeatSparkles();
     }
 
-    loveBtn.addEventListener("click", () => {
-      burstSparkles(34);
-    });
+loveBtn.addEventListener("click", () => {
+  // Pure visual replay (longer, cascading sparkles)
+  burstSparkles(26);
+  setTimeout(() => burstSparkles(20), 220);
+  setTimeout(() => burstSparkles(18), 520);
+  setTimeout(() => burstSparkles(16), 820);
+  setTimeout(() => burstSparkles(14), 1120);
+  setTimeout(() => burstSparkles(12), 1420);
+});
     overlay.addEventListener("click", (e) => {
       if (!canCloseOverlay) return;
       if (e.target === overlay) closeModal();
