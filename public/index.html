@@ -286,11 +286,11 @@
     .modalSub{
       margin:10px auto 0;
       max-width: 900px;
-      color: rgba(20,20,20,.88);
-      font-size: clamp(18px, 2.3vw, 24px);
-      line-height:1.25;
+      color: rgba(10,10,10,.74);
+      font-size: clamp(16px, 2.0vw, 20px);
+      line-height:1.28;
       letter-spacing:-.01em;
-      font-weight:800;
+      font-weight:720;
     }
 
     .modalSub .subName{
@@ -354,14 +354,16 @@
       filter: saturate(1.0) brightness(1.08) contrast(1.06);
     }
     .modalActions{
-      padding:16px 18px 26px;
+      padding:14px 18px 18px;
       display:flex;
       justify-content:center;
       gap:10px;
-      background: rgba(255,255,255,.9);
       width:100%;
       max-width:980px;
       margin:0 auto;
+      background: rgba(255,255,255,.62);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(255,255,255,.70);
     }
     .btn-close{
       border:none;
@@ -476,6 +478,14 @@
       .btn{min-width: 132px; font-size:17px;}
       .btn-yes{left: 28%;}
       .btn-no{left: 72%;}
+      .modal{border-radius: 22px;}
+      .modalTop{padding: 16px 18px 10px;}
+      .yayText{font-size: 34px;}
+      .yayEmoji{font-size: 22px;}
+      .modalSub{font-size: 16px; max-width: 92vw;}
+      .media{height: clamp(280px, 45vh, 360px);}
+      .modalActions{max-width: 92vw; padding: 12px 14px 16px;}
+      .btn-love{min-width: 170px; padding: 13px 22px; font-size: 16px;}
     }
   </style>
 </head>
@@ -529,7 +539,7 @@
       </div>
 
       <div class="modalActions">
-        <button class="btn-love" id="loveBtn">More love</button>
+        <button class="btn-love" id="loveBtn">One more</button>
       </div>
     </div>
   </div>
@@ -786,24 +796,27 @@
 
     function activateYes(e){
       if (overlay.classList.contains("show")) return;
+
+      // Allow only primary button for mouse; touch/pen are fine
+      if (e && e.type === "pointerdown" && e.pointerType === "mouse" && e.button !== 0) return;
+
       if (e){
-        e.preventDefault();
+        // Prevent scroll/drag so the press doesn't get interpreted as movement
+        if (e.cancelable) e.preventDefault();
         e.stopPropagation();
+        // Keep the pointer with the button even if the overlay appears
+        try { if (e.pointerId != null) yesBtn.setPointerCapture(e.pointerId); } catch(_){ }
       }
+
       openResult();
     }
 
-    // Prevent the arena from stealing interaction
-    yesBtn.addEventListener("pointerdown", (e) => {
-      e.stopPropagation();
-    });
+    // Fire on pointerdown for maximum reliability on mobile
+    yesBtn.addEventListener("pointerdown", activateYes);
 
-    // Trigger the result on click (best compatibility for sound)
-    yesBtn.addEventListener("click", activateYes);
-
-    // Extra safety for browsers that prefer pointer events
-    yesBtn.addEventListener("pointerup", (e) => {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Keyboard / accessibility fallback
+    yesBtn.addEventListener("click", (e) => {
+      if (e && e.cancelable) e.preventDefault();
       activateYes(e);
     });
 
@@ -951,7 +964,7 @@
       rafId = requestAnimationFrame(draw);
     }
 
-    function startConfetti(ms = 16000){
+    function startConfetti(ms = 17000){
       confettiOn = true;
       confettiMode = "burst";
       canvas.classList.add("show");
